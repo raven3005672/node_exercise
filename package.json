@@ -1,0 +1,19 @@
+{
+  "name": "node_exercise",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raven3005672/node_exercise.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/raven3005672/node_exercise/issues"
+  },
+  "homepage": "https://github.com/raven3005672/node_exercise#readme"
+}
