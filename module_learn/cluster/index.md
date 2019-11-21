@@ -259,11 +259,13 @@ if (cluster.isMaster) {
 
 当process上发生'disconnect'时间，并且.exitedAfterDisconnect的值不是true时，工作进程会调用process.exit(0)。这样就可以防止链接意外断开。
 
-### worker.send(message[, sendHandle][, callback])
+### worker.send(message[, sendHandle[, options]][, callback])
 
 * message <Object>
 * sendHandle <Handle>
-* calback <Function>
+* options <Object> options参数（如果存在）是一个对象，用于参数化某些类型的句柄的发送。options支持以下属性：
+    * keepOpen <boolean> 当传递net.Socket实例时可以使用的值。当为true时，套接字在发送的过程中保持打开状态。默认值：false
+* callback <Function>
 * return: <boolean>
 
 发送一个消息给工作进程或主进程，也可以附带发送一个句柄。
@@ -281,4 +283,229 @@ if (cluster.isMaster) {
     });
 }
 ```
+
+## disconnect事件
+
+* worker <cluster.Worker>
+
+在工作进程的IPC管道被断开后触发。可能导致事件触发的原因包括：工作进程优雅地退出、被杀死、或手动断开连接（如调用worker.disconnect()）
+
+disconnect和exit事件之间可能存在延迟。这些时间可以用来检测是否在清理过程中被卡住，或是否存在长时间运行的连接。
+
+```js
+cluster.on('disconnect', (worker) => {
+    console.log(`工作进程 #${worker.id} 已断开连接`);
+});
+```
+
+## exit事件
+
+* worker <cluster.Worker>
+* code <number> 正常退出时的退出代码
+* signal <string> 导致进程被杀死的信号名称
+
+当任何一个工作进程关闭的时候，cluster模块都将会触发exit事件。
+这可以用于重启工作进程（通过再次调用.fork()）
+
+```js
+cluster.on('exit', (worker, code, signal) => {
+    console.log('工作进程 %d 关闭 (%s). 重启中...', worker.process.pid, signal || code);
+    cluster.fork();
+});
+```
+
+## fork事件
+
+* worker <cluster.Worker>
+
+当新的工作进程被衍生时，cluster模块将会触发fork事件。可以被用来记录工作进程活动，并产生一个自定义的超时。
+
+```js
+const timeouts = [];
+function errorMsg() {
+    console.log('连接出错');
+}
+cluster.on('fork', (worker) => {
+    timeouts[worker.id] = setTimeout(errorMsg, 2000);
+});
+cluster.on('listening', (worker) => {
+    clearTimeout(timeouts[worker.id]);
+});
+cluster.on('exit', (worker, code, signal) => {
+    clearTimeout(timeouts[worker.id]);
+    errorMsg();
+});
+```
+
+## listening事件
+
+* worker <cluster.Worker>
+* address <Object>
+
+当一个工作进程调用listen()后，工作进程上的server会触发listening事件，同时主进程上的cluster也会触发listening事件。
+事件句柄使用两个参数来执行，其中worker包含了工作进程对象，address包含了以下的连接属性：address、port和addressType。当工作进程同时监听多个地址时，这些参数非常有用
+
+```js
+cluster.on('listening', (worker, address) => {
+    console.log(`工作进程已连接到${address.address}:${address.port}`);
+});
+// addressType可选值包括：
+// 4 => TCPv4
+// 6 => TCPv6
+// -1 => Unix域socket
+// udp4 or upd6 => UDPv4或v6
+```
+
+## message事件
+
+* worker <cluster.Worker>
+* message <Object>
+* handle <undefined> | <Object>
+
+当集群主进程从任何工作进程接收到消息时触发
+
+## online事件
+
+* worker <cluster.Worker>
+
+当衍生一个新的工作进程后，工作进程应当响应一个上线消息。当主进程收到上线消息后将会触发此事件。fork事件和online事件的区别在于，当主进程衍生工作进程时触发fork，当工作进程运行时触发online。
+
+```js
+cluster.on('online', (worker) => {
+    console.log('工作进程被衍生后响应');
+});
+```
+
+## setup事件
+
+* settings <Object>
+
+每当.setupMaster()被调用时触发。
+settings对象是.setupMaster()被调用时的cluster.settings对象，并且只能查询，因为在一个时间点内.setupMaster()可以被调用多次。
+如果精确度十分重要，则使用cluster.settings。
+
+## cluster.disconnect([callback])
+
+* callback <Function> 当所有工作进程都断开连接并且所有句柄都关闭的时候调用。
+
+在cluster.workers的每个工作进程中调用.disconnect()。
+当所有工作进程断开连接后，所有内部句柄将会关闭，这个时候如果没有等待事件的话，运行主进程优雅地关闭。
+这个方法可以选择添加一个回调参数，当结束时会调用这个回调函数。
+这个方法只能由主进程调用。
+
+## cluster.fork([env])
+
+* env <Object> 要添加到进程环境变量的键值对。
+* return: <cluster.Worker>
+
+衍生出一个新的工作进程。
+这只能通过主进程调用。
+
+## cluster.isMaster
+
+* <boolean>
+
+如果该进程是主进程，则为true。这是由process.env.NODE_UNIQUE_ID决定的。如果process.env.NODE_UNIQUE_ID未定义，则isMaster为true。
+
+## cluster.isWorker
+
+* <boolean>
+
+如果该进程不是主进程，则为true（与cluster.isMaster相反）
+
+## cluster.schedulingPolicy
+
+调度策略，包括循环计数的cluster.SCHED_RR，以及由操作系统决定的cluster.SCHED_NONE。这是一个全局设置，当第一个工作进程被衍生或者调用.setupMaster()时，都将第一时间生效。
+除windows外的所有操作系统中，SCHED_RR都是默认设置。只要libuv可以有效地分发IOCP句柄，而不会导致严重的性能冲击的话，Windows系统也会更改为SCHED_RR。
+cluster.schedulingPolicy可以通过设置NODE_CLUSTER_SCHED_POLICY环境变量来实现。这个环境变量的有效值包括rr和none
+
+## cluster.settings
+
+* <Object>
+    * execArgv <string[]> 传给Node.js可执行文件的字符串参数列表。默认值：process.execArgv
+    * exec <string> 工作进程的文件路径。默认值: process.argv[1]。
+    * args <string[]> 传给工作进程的字符串参数。默认值: process.argv.slice(2)。
+    * cwd <string> 工作进程的当前工作目录。默认值: undefined（从父进程继承）。
+    * silent <boolean> 是否需要发送输出到父进程的 stdio。默认值: false。
+    * stdio <Array> 配置衍生的进程的 stdio。 由于 cluster 模块运行依赖于 IPC，这个配置必须包含 'ipc'。如果提供了这个选项，则覆盖 silent。
+    * uid <number> 设置进程的用户标识符。参阅 setuid(2)。
+    * gid <number> 设置进程的群组标识符。参阅 setgid(2)。
+    * inspectPort <number> | <Function> 设置工作进程的检查端口。这可以是一个数字、或不带参数并返回数字的函数。默认情况下，每个工作进程都有自己的端口，从主进程的 process.debugPort 开始递增。
+    * windowsHide <boolean> 隐藏衍生的进程的控制台窗口（通常在 Windows 系统上会创建）。默认值: false。
+
+调用 .setupMaster()（或 .fork()）之后，这个配置对象将会包含这些配置项，包括默认值。
+这个对象不打算被修改或手动设置。
+
+## cluster.setupMaster([settings])
+
+* settings <Object> 详见cluster.settings.
+
+setupMaster用于修改默认的fork行为。一旦调用，将会按照cluster.settings进行设置。
+所有的设置只对后来的.fork()调用有效，对之前的工作进程无影响。
+唯一无法通过.setupMaster()设置的属性是传给.fork()的env属性。
+上述的默认值只在第一次调用时有效，当后续调用时，将采用cluster.setupMaster()调用时的当前值。
+
+```js
+const cluster = require('cluster');
+cluster.setupMaster({
+    exec: 'worker.js',
+    args: ['--use', 'https'],
+    silent: true
+});
+cluster.fork();     // https工作进程
+cluster.setupMaster({
+    exec: 'worker.js',
+    args: ['--use', 'http']
+});
+cluster.fork();     // http工作进程
+```
+
+这只能由主进程调用。
+
+## cluster.worker
+
+* <Object>
+
+当前工作进程对象的引用。对于主进程则无效。
+
+```js
+const cluster = require('cluster');
+if (cluster.isMaster) {
+    console.log('这是主进程');
+    cluster.fork();
+    cluster.fork();
+} else if (cluster.isWorker) {
+    console.log(`这是工作进程 #${cluster.worker.id}`);
+}
+```
+
+## cluster.workers
+
+* <Object>
+
+这是一个哈希表，储存了活跃的工作进程对象，使用id作为键名。这使得可以方便地遍历所有工作进程。只能在主进程中调用。
+工作进程断开连接以及退出后，将会从cluster.workers里面移除。这两个事件的先后顺序并不能预先确定。但可以保证的是，cluster.workers的移除工作在 disconnect和exit两个事件中的最后一个触发之前完成。
+
+```js
+// 遍历所有工作进程。
+function eachWorker(callback) {
+    for (const id in cluster.workers) {
+        callback(cluster.workers[id]);
+    }
+}
+eachWorker((worker) => {
+    worker.send('通知所有工作进程');
+});
+```
+
+使用工作进程的唯一id是定位工作进程最简单的方式。
+
+```js
+socket.on('data', (id) => {
+    const worker = cluster.workers[id];
+});
+```
+
+
+
 
