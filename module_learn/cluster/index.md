@@ -505,7 +505,3 @@ socket.on('data', (id) => {
     const worker = cluster.workers[id];
 });
 ```
-
-
-
-
