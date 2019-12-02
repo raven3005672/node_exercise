@@ -585,16 +585,14 @@ process.on('warning', (warning) => {
 
 ## process.emitWarning(warning[, type[, code]][, ctor])
 
-todo 
-中英对照提交修改
+* warning <string> | <Error> 触发的警告。
+* type <string> 当 warning 是一个 String 时，则 type 是用于被触发的警告类型的名称。 默认值: 'Warning'。
+* code <string> 要触发的警告实例的唯一标识符。
+* ctor <Function> 当 warning 是一个 String 时，则 ctor 是一个可选的函数，用于限制生成的堆栈信息。默认值: process.emitWarning。
 
-新增于: v6.0.0
-warning <string> | <Error> 触发的警告。
-type <string> 当 warning 是一个 String 时，则 type 是用于被触发的警告类型的名称。 默认值: 'Warning'。
-code <string> 要触发的警告实例的唯一标识符。
-ctor <Function> 当 warning 是一个 String 时，则 ctor 是一个可选的函数，用于限制生成的堆栈信息。默认值: process.emitWarning。
 process.emitWarning() 方法可用于触发自定义或应用特定的进程警告。 可以通过给 'warning' 事件增加处理程序来监听这些警告。
 
+```js
 // 使用字符串触发警告。
 process.emitWarning('出错啦');
 // 触发: (node: 56338) Warning: 出错啦
@@ -603,16 +601,22 @@ process.emitWarning('出错啦', 'CustomWarning');
 // 触发: (node:56338) CustomWarning: 出错啦
 process.emitWarning('出错啦', 'CustomWarning', 'WARN001');
 // 触发: (node:56338) [WARN001] CustomWarning: 出错啦
+```
+
 在前面的每个示例中， process.emitWarning() 内部生成了一个 Error 对象，并传给 'warning' 句柄。
 
+```js
 process.on('warning', (warning) => {
   console.warn(warning.name);
   console.warn(warning.message);
   console.warn(warning.code);
   console.warn(warning.stack);
 });
+```
+
 如果 warning 是一个 Error 对象，则它将会被透传给 'warning' 事件处理程序（并且将会忽略可选的 type、 code 和 ctor 参数）：
 
+```js
 // 使用错误对象触发警告。
 const myWarning = new Error('出错啦');
 // 使用错误名称属性指定类型名称。
@@ -621,20 +625,23 @@ myWarning.code = 'WARN001';
 
 process.emitWarning(myWarning);
 // 触发: (node:56338) [WARN001] CustomWarning: 出错啦
+```
+
 如果 warning 不是一个字符串或 Error，则会抛出 TypeError。
 
 当进程警告使用 Error 对象时，进程警告机制并不是常用的错误处理机制的替代方式。
 
 如果警告的 type 是 'DeprecationWarning'，则会涉及如下额外的处理：
 
-如果使用 --throw-deprecation 命令行标识，则废弃的警告会作为异常抛出，而不是作为事件被触发。
-如果使用--no-deprecation 命令行标识，则废弃的警告会被忽略。
-如果使用--trace-deprecation 命令行标识，则废弃的警告及其全部堆栈信息会被打印到 stderr。
-避免重复告警#
-中英对照提交修改
+* 如果使用 --throw-deprecation 命令行标识，则废弃的警告会作为异常抛出，而不是作为事件被触发。
+* 如果使用--no-deprecation 命令行标识，则废弃的警告会被忽略。
+* 如果使用--trace-deprecation 命令行标识，则废弃的警告及其全部堆栈信息会被打印到 stderr。
+
+### 避免重复告警
 
 作为最佳实践，警告应该在每个进程中最多发出一次。 为了达到上述的要求，推荐在使用emitWarning()之前用一个简单的布尔值做判断，如下例所示：
 
+```js
 function emitMyWarning() {
   if (!emitMyWarning.warned) {
     emitMyWarning.warned = true;
@@ -645,15 +652,17 @@ emitMyWarning();
 // 触发: (node: 56339) Warning: 只警告一次
 emitMyWarning();
 // 什么都没触发。
-process.env#
-中英对照提交修改
+```
 
-版本历史
-<Object>
+## process.env
+
+* <Object>
+
 process.env 属性返回包含用户环境的对象。 参阅 environ(7)。
 
 此对象的示例如下所示：
 
+```js
 {
   TERM: 'xterm-256color',
   SHELL: '/usr/local/bin/bash',
@@ -666,66 +675,95 @@ process.env 属性返回包含用户环境的对象。 参阅 environ(7)。
   LOGNAME: 'maciej',
   _: '/usr/local/bin/node'
 }
+```
+
 可以修改此对象，但这些修改不会反映到 Node.js 进程之外，或者（除非明确请求）反映到其他 Worker 线程。 换句话说，以下示例不起作用：
 
+```shell
 $ node -e 'process.env.foo = "bar"' && echo $foo
+```
+
 以下示例则起作用：
 
+```js
 process.env.foo = 'bar';
 console.log(process.env.foo);
+```
+
 在 process.env 上分配属性将隐式地将值转换为字符串。 不推荐使用此行为。 当值不是字符串、数字或布尔值时，Node.js 的未来版本可能会抛出错误。
 
+```js
 process.env.test = null;
 console.log(process.env.test);
 // => 'null'
 process.env.test = undefined;
 console.log(process.env.test);
 // => 'undefined'
+```
+
 使用 delete 可以从 process.env 中删除属性。
 
+```js
 process.env.TEST = 1;
 delete process.env.TEST;
 console.log(process.env.TEST);
 // => undefined
+```
+
 在 Windows 操作系统上，环境变量不区分大小写。
 
+```js
 process.env.TEST = 1;
 console.log(process.env.test);
 // => 1
+```
+
 除非在创建 Worker 实例时明确指定，否则每个 Worker 线程都有自己的 process.env 副本，基于其父线程的 process.env，或者指定为 Worker 构造函数的 env 选项的任何内容。 对于 process.env 的更改将在 Worker 线程中不可见，并且只有主线程可以进行对操作系统或本机加载项可见的更改。
 
-process.execArgv#
-中英对照提交修改
+## process.execArgv
 
-新增于: v0.7.7
-<string[]>
+* <string[]>
+
 process.execArgv 属性返回当 Node.js 进程被启动时，Node.js 特定的命令行选项。 这些选项在 process.argv 属性返回的数组中不会出现，并且这些选项中不会包括 Node.js 的可执行脚本名称或者任何在脚本名称后面出现的选项。 这些选项在创建子进程时是有用的，因为他们包含了与父进程一样的执行环境信息。
 
+```shell
 $ node --harmony script.js --version
+```
+
 process.execArgv 的结果:
 
+```shell
 ['--harmony']
+```
+
 process.argv 的结果:
 
+```shell
 ['/usr/local/bin/node', 'script.js', '--version']
-process.execPath#
-中英对照提交修改
+```
 
-新增于: v0.1.100
-<string>
+## process.execPath
+
+* <string>
+
 process.execPath 属性返回启动 Node.js 进程的可执行文件的绝对路径名。
 
+```js
 '/usr/local/bin/node'
-process.exit([code])#
-中英对照提交修改
+```
 
-新增于: v0.1.13
-code <integer> 退出码。默认值: 0。
+## process.exit([code])
+
+* code <integer> 退出码。默认值: 0。
+
 process.exit() 方法以退出状态 code 指示 Node.js 同步地终止进程。 如果省略 code，则使用成功代码 0 或 process.exitCode 的值（如果已设置）退出。 在调用所有的 'exit' 事件监听器之前，Node.js 不会终止。
 
 使用失败代码退出：
 
+```js
 process.exit(1);
+```
+
 执行 Node.js 的 shell 应该得到的退出码为 1。
 
 调用 process.exit() 将强制进程尽快退出，即使还有尚未完全完成的异步操作，包括对 process.stdout 和 process.stderr 的 I/O 操作。
@@ -734,102 +772,111 @@ process.exit(1);
 
 例如，以下示例说明了 process.exit() 方法的错误用法，该方法可能导致打印到 stdout 的数据被截断和丢失：
 
+```js
 // 这是一个错误用法的示例：
 if (someConditionNotMet()) {
   printUsageToStdout();
   process.exit(1);
 }
+```
+
 这是有问题的原因是因为对 Node.js 中的 process.stdout 的写入有时是异步的，并且可能发生在 Node.js 事件循环的多个时间点中。 但是，调用 process.exit() 会强制进程退出，然后才能执行对 stdout 的其他写入操作。
 
 代码不应直接调用 process.exit()，而应设置 process.exitCode 并允许进程自然退出，避免为事件循环调度任何其他工作：
 
+```js
 // 如何正确设置退出码，同时让进程正常退出。
 if (someConditionNotMet()) {
   printUsageToStdout();
   process.exitCode = 1;
 }
+```
+
 如果由于错误条件而需要终止 Node.js 进程，则抛出未被捕获的错误并允许进程相应地终止，这比调用 process.exit() 更安全。
 
 在 Worker 线程中，此函数将停止当前线程而不是当前进程。
 
-process.exitCode#
-中英对照提交修改
+## process.exitCode
 
-新增于: v0.11.8
-<integer>
+* <integer>
+
 当进程正常退出，或通过 process.exit() 退出且未指定退出码时，此数值将作为进程的退出码。
 
 指定 process.exit(code) 的退出码将覆盖 process.exitCode 的原有设置。
 
-process.getegid()#
-中英对照提交修改
+## process.getegid()
 
-新增于: v2.0.0
 process.getegid() 方法返回 Node.js 进程的有效数字标记的组身份（参阅 getegid(2)）。
 
+```js
 if (process.getegid) {
   console.log(`当前的 gid: ${process.getegid()}`);
 }
+```
+
 这个函数只在 POSIX 平台有效（在 Windows 或 Android 平台无效）。
 
-process.geteuid()#
-中英对照提交修改
+## process.geteuid()
 
-新增于: v2.0.0
-返回: <Object>
+* 返回: <Object>
+
 process.geteuid() 方法返回 Node.js 进程的有效数字标记的用户身份（参阅 geteuid(2)）。
 
+```js
 if (process.geteuid) {
   console.log(`当前的 uid: ${process.geteuid()}`);
 }
+```
+
 这个函数只在 POSIX 平台有效（在 Windows 或 Android 平台无效）。
 
-process.getgid()#
-中英对照提交修改
+## process.getgid()
 
-新增于: v0.1.31
-返回: <Object>
+* 返回: <Object>
+
 process.getgid() 方法返回 Node.js 进程的数字标记的组身份（参阅 getgid(2)）。
 
+```js
 if (process.getgid) {
   console.log(`当前的 gid: ${process.getgid()}`);
 }
+```
+
 这个函数只在 POSIX 平台有效（在 Windows 或 Android 平台无效）。
 
-process.getgroups()#
-中英对照提交修改
+## process.getgroups()
 
-新增于: v0.9.4
-返回: <integer[]>
+* 返回: <integer[]>
+
 process.getgroups() 方法返回数组，其中包含了补充的组 ID。 如果包含有效的组 ID，则 POSIX 会将其保留为未指定状态，但 Node.js 会确保它始终处于状态。
 
 这个函数只在 POSIX 平台有效（在 Windows 或 Android 平台无效）。
 
-process.getuid()#
-中英对照提交修改
+## process.getuid()
 
-新增于: v0.1.28
-返回: <integer>
+* 返回: <integer>
+
 process.getuid() 方法返回 Node.js 进程的数字标记的用户身份（参阅 getuid(2)）。
 
+```js
 if (process.getuid) {
   console.log(`当前的 uid: ${process.getuid()}`);
 }
+```
+
 这个函数只在 POSIX 平台有效（在 Windows 或 Android 平台无效）。
 
-process.hasUncaughtExceptionCaptureCallback()#
-中英对照提交修改
+## process.hasUncaughtExceptionCaptureCallback()
 
-新增于: v9.3.0
-返回: <boolean>
+* 返回: <boolean>
+
 表明是否已使用 process.setUncaughtExceptionCaptureCallback() 设置回调。
 
-process.hrtime([time])#
-中英对照提交修改
+## process.hrtime([time])
 
-新增于: v0.7.6
-time <integer[]> 上一次调用 process.hrtime() 的结果。
-返回: <integer[]>
+* time <integer[]> 上一次调用 process.hrtime() 的结果。
+* 返回: <integer[]>
+
 这是在 JavaScript 中引入 bigint 之前的 process.hrtime.bigint() 的遗留版本。
 
 process.hrtime() 方法返回当前时间以 [seconds, nanoseconds] 元数组表示的高精度解析值，其中 nanoseconds 是当前时间无法使用秒的精度表示的剩余部分。
@@ -838,6 +885,7 @@ time 是可选参数，传入的值是上一次调用 process.hrtime() 返回的
 
 返回的时间都是相对于过去某一时刻的值，与一天中的时钟时间没有关系，因此不受制于时钟偏差。 此方法最主要的作用是衡量间隔操作的性能：
 
+```js
 const NS_PER_SEC = 1e9;
 const time = process.hrtime();
 // [ 1800216, 25 ]
@@ -849,15 +897,17 @@ setTimeout(() => {
   console.log(`基准工具 ${diff[0] * NS_PER_SEC + diff[1]} 纳秒`);
   // 基准工具 1000000552 纳秒
 }, 1000);
-process.hrtime.bigint()#
-中英对照提交修改
+```
 
-新增于: v10.7.0
-返回: <bigint>
+## process.hrtime.bigint()
+
+* 返回: <bigint>
+
 process.hrtime() 方法的 bigint 版本，返回当前的高精度实际时间（以纳秒为单位的 bigint 型）。
 
 与 process.hrtime() 不同，它不支持额外的 time 参数，因为可以直接通过两个 bigint 相减来计算差异。
 
+```js
 const start = process.hrtime.bigint();
 // 191051479007711n
 
@@ -868,29 +918,32 @@ setTimeout(() => {
   console.log(`基准测试耗时 ${end - start} 纳秒`);
   // 基准测试耗时 1154389282 纳秒
 }, 1000);
-process.initgroups(user, extraGroup)#
-中英对照提交修改
+```
 
-新增于: v0.9.4
-user <string> | <number> 用户名称或数字标识符。
-extra_group <string> | <number> 组名称或数字标识符。
+## process.initgroups(user, extraGroup)
+
+* user <string> | <number> 用户名称或数字标识符。
+* extra_group <string> | <number> 组名称或数字标识符。
+
 process.initgroups() 方法读取 /etc/group 文件，并且初始化组访问列表，该列表包括了用户所在的所有组。 该方法需要 Node.js 进程有 root 访问或者有CAP_SETGID 能力才能操作。
 
 删除权限时要小心：
 
+```js
 console.log(process.getgroups());         // [ 0 ]
 process.initgroups('bnoordhuis', 1000);   // 切换用户。
 console.log(process.getgroups());         // [ 27, 30, 46, 1000, 0 ]
 process.setgid(1000);                     // 删除 root 的 gid。
 console.log(process.getgroups());         // [ 27, 30, 46, 1000 ]
+```
+
 这个函数只在 POSIX 平台有效（在 Windows 或 Android 平台无效）。 此特性在 Worker 线程中不可用。
 
-process.kill(pid[, signal])#
-中英对照提交修改
+## process.kill(pid[, signal])
 
-新增于: v0.0.6
-pid <number> 进程 ID。
-signal <string> | <number> 将发送的信号，类型为字符串或数字。默认值: 'SIGTERM'。
+* pid <number> 进程 ID。
+* signal <string> | <number> 将发送的信号，类型为字符串或数字。默认值: 'SIGTERM'。
+
 process.kill() 方法将 signal 发送给 pid 标识的进程。
 
 信号名称是如 'SIGINT' 或 'SIGHUP'的字符串。更多信息，参阅信号事件和 kill(2)。
@@ -899,6 +952,7 @@ process.kill() 方法将 signal 发送给 pid 标识的进程。
 
 即使这个函数的名称是 process.kill(),它其实只是发送信号，这点与 kill 系统调用类似。 发送的信号可能是做一些与杀死目标进程无关的事情。
 
+```js
 process.on('SIGHUP', () => {
   console.log('收到 SIGHUP 信号');
 });
@@ -909,54 +963,59 @@ setTimeout(() => {
 }, 100);
 
 process.kill(process.pid, 'SIGHUP');
+```
+
 当 Node.js 进程接收到 SIGUSR1 时，Node.js 将会启动调试器，参阅信号事件。
 
-process.mainModule#
-中英对照提交修改
+## process.mainModule
 
-新增于: v0.1.17
-<Object>
+* <Object>
+
 process.mainModule 属性提供了一种获取 require.main 的替代方式。 区别在于，若主模块在运行时中发生改变，require.main 可能仍然指向变化之前所依赖的模块。 一般来说，假定两者指向相同的模块是安全的。
 
 就像 require.main 一样，如果没有入口脚本， process.mainModule 的值是 undefined。
 
-process.memoryUsage()#
-中英对照提交修改
+## process.memoryUsage()
 
-版本历史
-返回: <Object>
+* 返回: <Object>
+    * rss <integer>
+    * heapTotal <integer>
+    * heapUsed <integer>
+    * external <integer>
 
-rss <integer>
-heapTotal <integer>
-heapUsed <integer>
-external <integer>
 process.memoryUsage() 方法返回 Node.js 进程的内存使用情况的对象，该对象每个属性值的单位为字节。
 
 例如：
 
+```js
 console.log(process.memoryUsage());
+```
+
 会得到：
 
+```js
 {
   rss: 4935680,
   heapTotal: 1826816,
   heapUsed: 650472,
   external: 49879
 }
+```
+
 heapTotal 和 heapUsed 代表 V8 的内存使用情况。 external 代表 V8 管理的，绑定到 Javascript 的 C++ 对象的内存使用情况。 rss 是驻留集大小, 是给这个进程分配了多少物理内存（占总分配内存的一部分），这些物理内存中包含堆、代码段、以及栈。
 
 对象、字符串、闭包等存于堆内存。 变量存于栈内存，实际的 JavaScript 源代码存于代码段内存。
 
 使用 Worker 线程时， rss 将会是一个对整个进程有效的值，而其他字段只指向当前线程。
 
-process.nextTick(callback[, ...args])#
-中英对照提交修改
+## process.nextTick(callback[, ...args])
 
-版本历史
-callback <Function>
-...args <any> 当调用 callback 时传入的其他参数。
+* callback <Function>
+* ...args <any> 当调用 callback 时传入的其他参数。
+
 process.nextTick() 方法将 callback 添加到下一个时间点的队列。 在 JavaScript 堆栈上的当前操作运行完成之后以及允许事件循环继续之前，此队列会被完全耗尽。 如果要递归地调用 process.nextTick()，则可以创建无限的循环。 有关更多背景信息，请参阅事件循环指南。
 
+```js
 console.log('开始');
 process.nextTick(() => {
   console.log('下一个时间点的回调');
@@ -966,8 +1025,11 @@ console.log('调度');
 // 开始
 // 调度
 // 下一个时间点的回调
+```
+
 这在开发 API 时非常重要，以便在构造对象之后但在发生任何 I/O 之前，为用户提供分配事件处理函数的机会：
 
+```js
 function MyThing(options) {
   this.setupOptions(options);
 
@@ -980,30 +1042,36 @@ const thing = new MyThing();
 thing.getReadyForStuff();
 
 // thing.startDoingStuff() 现在被调用，而不是在之前。
+```
+
 对于 100% 同步或 100% 异步的 API，此方法也非常重要。 考虑如下示例：
 
+```js
 // 警告！不要这样使用！这是不安全的！
 function maybeSync(arg, cb) {
   if (arg) {
     cb();
     return;
   }
-
   fs.stat('file', cb);
 }
+```
+
 此 API 是不安全的，因为在以下情况中：
 
+```js
 const maybeTrue = Math.random() > 0.5;
-
 maybeSync(maybeTrue, () => {
   foo();
 });
-
 bar();
+```
+
 不清楚是否先调用 foo() 或 bar()。
 
 以下方法则更好：
 
+```js
 function definitelyAsync(arg, cb) {
   if (arg) {
     process.nextTick(cb);
@@ -1012,66 +1080,74 @@ function definitelyAsync(arg, cb) {
 
   fs.stat('file', cb);
 }
-process.noDeprecation#
-中英对照提交修改
+```
 
-新增于: v0.8.0
-<boolean>
+## process.noDeprecation
+
+* <boolean>
+
 process.noDeprecation 属性表明是否在当前 Node.js 进程上设置了 --no-deprecation 标志。 有关此标志行为的更多信息，请参阅 'warning' 事件和 emitWarning() 方法的文档。
 
-process.pid#
-中英对照提交修改
+## process.pid
 
-新增于: v0.1.15
-<integer>
+* <integer>
+
 process.pid 属性返回进程的 PID。
 
+```js
 console.log(`此进程的 pid 是 ${process.pid}`);
-process.platform#
-中英对照提交修改
+```
 
-新增于: v0.1.16
-<string>
+## process.platform
+
+* <string>
+
 process.platform 属性返回字符串，标识 Node.js 进程运行其上的操作系统平台。
 
 当前可能的值有：
 
-'aix'
-'darwin'
-'freebsd'
-'linux'
-'openbsd'
-'sunos'
-'win32'
+* 'aix'
+* 'darwin'
+* 'freebsd'
+* 'linux'
+* 'openbsd'
+* 'sunos'
+* 'win32'
+
+```js
 console.log(`此平台是 ${process.platform}`);
+```
+
 如果 Node.js 是在 Android 操作系统上构建的，也可以返回值 'android'。 但是，Node.js 中的 Android 支持是实验性的。
 
-process.ppid#
-中英对照提交修改
+## process.ppid
 
-新增于: v9.2.0, v8.10.0, v6.13.0
-<integer>
+* <integer>
+
 process.ppid 属性返回当前父进程的 PID。
 
+```js
 console.log(`父进程的 pid 是 ${process.ppid}`);
-process.release#
-中英对照提交修改
+```
 
-版本历史
-<Object>
+## process.release
+
+* <Object>
+
 process.release 属性返回与当前发布相关的元数据 Object，包括源代码和源代码头文件 tarball 的 URL。
 
 process.release 包括如下属性：
 
-name <string> 对于 Node.js，此值始终为 'node'。对于遗留的 io.js 发布包，此值为 'io.js'。
-sourceUrl <string> 指向一个.tar.gz文件的绝对 URL，包括了当前发布的源代码。
-headersUrl<string> 指向一个.tar.gz文件的绝对 URL，包括了当前发布的源代码的头文件信息。 这个文件要比全部源代码文件明显小很多，可以用于编译 Node.js 原生插件。
-libUrl <string> 指向一个node.lib文件的绝对 URL，匹配当前发布的结构和版本信息。此文件用于编译 Node.js 本地插件。这个属性只在 Windows 版本中存在，在其他平台中无效。
-lts <string> 标识当前发布的 LTS 标签的字符串。  只有 LTS 版本存在这个属性，其他所有版本类型（包括当前版本）这个属性都是 undefined。  当前的有效值有：
+* name <string> 对于 Node.js，此值始终为 'node'。对于遗留的 io.js 发布包，此值为 'io.js'。
+* sourceUrl <string> 指向一个.tar.gz文件的绝对 URL，包括了当前发布的源代码。
+* headersUrl<string> 指向一个.tar.gz文件的绝对 URL，包括了当前发布的源代码的头文件信息。 这个文件要比全部源代码文件明显小很多，可以用于编译 Node.js 原生插件。
+* libUrl <string> 指向一个node.lib文件的绝对 URL，匹配当前发布的结构和版本信息。此文件用于编译 Node.js 本地插件。这个属性只在 Windows 版本中存在，在其他平台中无效。
+* lts <string> 标识当前发布的 LTS 标签的字符串。  只有 LTS 版本存在这个属性，其他所有版本类型（包括当前版本）这个属性都是 undefined。  当前的有效值有：
+    * 'Argon' 用于 4.2.0 开始的 4.x LTS 版本。
+    * 'Boron' 用于 6.9.0 开始的 6.x LTS 版本。
+    * 'Carbon' 用于 8.9.1 开始的 8.x LTS 版本。
 
-'Argon' 用于 4.2.0 开始的 4.x LTS 版本。
-'Boron' 用于 6.9.0 开始的 6.x LTS 版本。
-'Carbon' 用于 8.9.1 开始的 8.x LTS 版本。
+```js
 {
   name: 'node',
   lts: 'Argon',
@@ -1079,125 +1155,146 @@ lts <string> 标识当前发布的 LTS 标签的字符串。  只有 LTS 版本�
   headersUrl: 'https://nodejs.org/download/release/v4.4.5/node-v4.4.5-headers.tar.gz',
   libUrl: 'https://nodejs.org/download/release/v4.4.5/win-x64/node.lib'
 }
+```
+
 从源码树的非发布版本中构建的定制版本，可能只有 name 属性有效。其他的属性不一定会存在。
 
-process.report#
-暂无中英对照
+## process.report
 
-新增于: v11.8.0
-稳定性: 1 - 试验
-<Object>
+【稳定性: 1 - 试验】
+
+* <Object>
+
 process.report is an object whose methods are used to generate diagnostic reports for the current process. Additional documentation is available in the report documentation.
 
-process.report.directory#
-暂无中英对照
+### process.report.directory
 
-新增于: v11.12.0
 稳定性: 1 - 试验
-<string>
+
+* <string>
+
 Directory where the report is written. The default value is the empty string, indicating that reports are written to the current working directory of the Node.js process.
 
+```js
 console.log(`Report directory is ${process.report.directory}`);
-process.report.filename#
-暂无中英对照
+```
 
-新增于: v11.12.0
+### process.report.filename
+
 稳定性: 1 - 试验
-<string>
+
+* <string>
+
 Filename where the report is written. If set to the empty string, the output filename will be comprised of a timestamp, PID, and sequence number. The default value is the empty string.
 
+```js
 console.log(`Report filename is ${process.report.filename}`);
-process.report.getReport([err])#
-暂无中英对照
+```
 
-新增于: v11.8.0
+### process.report.getReport([err])
+
 稳定性: 1 - 试验
-err <Error> A custom error used for reporting the JavaScript stack.
-Returns: <Object>
+
+* err <Error> A custom error used for reporting the JavaScript stack.
+* Returns: <Object>
+
 Returns a JavaScript Object representation of a diagnostic report for the running process. The report's JavaScript stack trace is taken from err, if present.
 
+```js
 const data = process.report.getReport();
 console.log(data.header.nodeJsVersion);
-
 // Similar to process.report.writeReport()
 const fs = require('fs');
 fs.writeFileSync(util.inspect(data), 'my-report.log', 'utf8');
+```
+
 Additional documentation is available in the report documentation.
 
-process.report.reportOnFatalError#
-暂无中英对照
+### process.report.reportOnFatalError
 
-新增于: v11.12.0
 稳定性: 1 - 试验
-<boolean>
+
+* <boolean>
+
 If true, a diagnostic report is generated on fatal errors, such as out of memory errors or failed C++ assertions.
 
+```js
 console.log(`Report on fatal error: ${process.report.reportOnFatalError}`);
-process.report.reportOnSignal#
-暂无中英对照
+```
 
-新增于: v11.12.0
+### process.report.reportOnSignal
+
 稳定性: 1 - 试验
-<boolean>
+
+* <boolean>
+
 If true, a diagnostic report is generated when the process receives the signal specified by process.report.signal.
 
+```js
 console.log(`Report on signal: ${process.report.reportOnSignal}`);
-process.report.reportOnUncaughtException#
-暂无中英对照
+```
 
-新增于: v11.12.0
+### process.report.reportOnUncaughtException
+
 稳定性: 1 - 试验
-<boolean>
+
+* <boolean>
+
 If true, a diagnostic report is generated on uncaught exception.
 
+```js
 console.log(`Report on exception: ${process.report.reportOnUncaughtException}`);
-process.report.signal#
-暂无中英对照
+```
 
-新增于: v11.12.0
+### process.report.signal
+
 稳定性: 1 - 试验
-<string>
+
+* <string>
+
 The signal used to trigger the creation of a diagnostic report. Defaults to 'SIGUSR2'.
 
+```js
 console.log(`Report signal: ${process.report.signal}`);
-process.report.writeReport([filename][, err])#
-暂无中英对照
+```
 
-新增于: v11.8.0
+### process.report.writeReport([filename][, err])
+
 稳定性: 1 - 试验
-filename <string> Name of the file where the report is written. This should be a relative path, that will be appended to the directory specified in process.report.directory, or the current working directory of the Node.js process, if unspecified.
 
-err <Error> A custom error used for reporting the JavaScript stack.
-
-Returns: <string> Returns the filename of the generated report.
+* filename <string> Name of the file where the report is written. This should be a relative path, that will be appended to the directory specified in process.report.directory, or the current working directory of the Node.js process, if unspecified.
+* err <Error> A custom error used for reporting the JavaScript stack.
+* Returns: <string> Returns the filename of the generated report.
 
 Writes a diagnostic report to a file. If filename is not provided, the default filename includes the date, time, PID, and a sequence number. The report's JavaScript stack trace is taken from err, if present.
 
+```js
 process.report.writeReport();
+```
+
 Additional documentation is available in the report documentation.
 
-process.resourceUsage()#
-暂无中英对照提交修改
+## process.resourceUsage()
 
-新增于: v12.6.0
-Returns: <Object> the resource usage for the current process. All of these values come from the uv_getrusage call which returns a uv_rusage_t struct.
+* Returns: <Object> the resource usage for the current process. All of these values come from the uv_getrusage call which returns a uv_rusage_t struct.
+    * userCPUTime <integer> maps to ru_utime computed in microseconds. It is the same value as process.cpuUsage().user.
+    * systemCPUTime <integer> maps to ru_stime computed in microseconds. It is the same value as process.cpuUsage().system.
+    * maxRSS <integer> maps to ru_maxrss which is the maximum resident set size used in kilobytes.
+    * sharedMemorySize <integer> maps to ru_ixrss but is not supported by any platform.
+    * unsharedDataSize <integer> maps to ru_idrss but is not supported by any platform.
+    * unsharedStackSize <integer> maps to ru_isrss but is not supported by any platform.
+    * minorPageFault <integer> maps to ru_minflt which is the number of minor page faults for the process, see this article for more details.
+    * majorPageFault <integer> maps to ru_majflt which is the number of major page faults for the process, see this article for more details. This field is not supported on Windows.
+    * swappedOut <integer> maps to ru_nswap but is not supported by any platform.
+    * fsRead <integer> maps to ru_inblock which is the number of times the file system had to perform input.
+    * fsWrite <integer> maps to ru_oublock which is the number of times the file system had to perform output.
+    * ipcSent <integer> maps to ru_msgsnd but is not supported by any platform.
+    * ipcReceived <integer> maps to ru_msgrcv but is not supported by any platform.
+    * signalsCount <integer> maps to ru_nsignals but is not supported by any platform.
+    * voluntaryContextSwitches <integer> maps to ru_nvcsw which is the number of times a CPU context switch resulted due to a process voluntarily giving up the processor before its time slice was completed (usually to await availability of a resource). This field is not supported on Windows.
+    * involuntaryContextSwitches <integer> maps to ru_nivcsw which is the number of times a CPU context switch resulted due to a higher priority process becoming runnable or because the current process exceeded its time slice. This field is not supported on Windows.
 
-userCPUTime <integer> maps to ru_utime computed in microseconds. It is the same value as process.cpuUsage().user.
-systemCPUTime <integer> maps to ru_stime computed in microseconds. It is the same value as process.cpuUsage().system.
-maxRSS <integer> maps to ru_maxrss which is the maximum resident set size used in kilobytes.
-sharedMemorySize <integer> maps to ru_ixrss but is not supported by any platform.
-unsharedDataSize <integer> maps to ru_idrss but is not supported by any platform.
-unsharedStackSize <integer> maps to ru_isrss but is not supported by any platform.
-minorPageFault <integer> maps to ru_minflt which is the number of minor page faults for the process, see this article for more details.
-majorPageFault <integer> maps to ru_majflt which is the number of major page faults for the process, see this article for more details. This field is not supported on Windows.
-swappedOut <integer> maps to ru_nswap but is not supported by any platform.
-fsRead <integer> maps to ru_inblock which is the number of times the file system had to perform input.
-fsWrite <integer> maps to ru_oublock which is the number of times the file system had to perform output.
-ipcSent <integer> maps to ru_msgsnd but is not supported by any platform.
-ipcReceived <integer> maps to ru_msgrcv but is not supported by any platform.
-signalsCount <integer> maps to ru_nsignals but is not supported by any platform.
-voluntaryContextSwitches <integer> maps to ru_nvcsw which is the number of times a CPU context switch resulted due to a process voluntarily giving up the processor before its time slice was completed (usually to await availability of a resource). This field is not supported on Windows.
-involuntaryContextSwitches <integer> maps to ru_nivcsw which is the number of times a CPU context switch resulted due to a higher priority process becoming runnable or because the current process exceeded its time slice. This field is not supported on Windows.
+```js
 console.log(process.resourceUsage());
 /*
   Will output:
@@ -1220,30 +1317,30 @@ console.log(process.resourceUsage());
     involuntaryContextSwitches: 1
   }
 */
-process.send(message[, sendHandle[, options]][, callback])#
-中英对照提交修改
+```
 
-新增于: v0.5.9
-message <Object>
-sendHandle <net.Server> | <net.Socket>
-options <Object> 用于参数化某些类型的句柄的发送。options 支持以下属性：
+## process.send(message[, sendHandle[, options]][, callback])
 
-keepOpen <boolean> 当传递 net.Socket 实例时可以使用的值。当为 true 时，套接字在发送的过程中保持打开状态。默认值: false。
-callback <Function>
-返回: <boolean>
+* message <Object>
+* sendHandle <net.Server> | <net.Socket>
+* options <Object> 用于参数化某些类型的句柄的发送。options 支持以下属性：
+    * keepOpen <boolean> 当传递 net.Socket 实例时可以使用的值。当为 true 时，套接字在发送的过程中保持打开状态。默认值: false。
+* callback <Function>
+* 返回: <boolean>
+
 如果 Node.js 是使用 IPC 通道衍生的，则可以使用 process.send() 方法将消息发送到父进程。 消息将会作为父进程的 ChildProcess 对象上的 'message' 事件被接收。
 
 如果 Node.js 不是通过 IPC 通道衍生的，则 process.send() 将会是 undefined。
 
 消息会进行序列化和解析。 生成的消息可能与最初发送的消息不同。
 
-process.setegid(id)#
-中英对照提交修改
+## process.setegid(id)
 
-新增于: v2.0.0
-id <string> | <number> 组名或 ID。
+* id <string> | <number> 组名或 ID。
+
 process.setegid() 方法为进程设置有效的组标识。（参阅 setegid(2)）。 id 可以传入数字 ID 或组名字符串。 如果指定了组名，则此方法在解析关联的数字 ID 时会阻塞。
 
+```js
 if (process.getegid && process.setegid) {
   console.log(`当前的 gid: ${process.getegid()}`);
   try {
@@ -1253,15 +1350,17 @@ if (process.getegid && process.setegid) {
     console.log(`无法设置 gid: ${err}`);
   }
 }
+```
+
 这个函数只在 POSIX 平台有效（在 Windows 或 Android 平台无效）。 此特性在 Worker 线程中不可用。
 
-process.seteuid(id)#
-中英对照提交修改
+## process.seteuid(id)
 
-新增于: v2.0.0
-id <string> | <number> 用户名或 ID。
+# id <string> | <number> 用户名或 ID。
+
 process.seteuid() 方法为进程设置有效的用户标识。（参阅 seteuid(2)）。 id 可以传入数字 ID 或用户名字符串。 如果指定了用户名，则此方法在解析关联的数字 ID 时会阻塞。
 
+```js
 if (process.geteuid && process.seteuid) {
   console.log(`当前的 uid: ${process.geteuid()}`);
   try {
@@ -1271,15 +1370,17 @@ if (process.geteuid && process.seteuid) {
     console.log(`无法设置 uid: ${err}`);
   }
 }
+```
+
 这个函数只在 POSIX 平台有效（在 Windows 或 Android 平台无效）。 此特性在 Worker 线程中不可用。
 
-process.setgid(id)#
-中英对照提交修改
+## process.setgid(id)
 
-新增于: v0.1.31
-id <string> | <number> 组名或 ID。
+* id <string> | <number> 组名或 ID。
+
 process.setgid() 方法为进程设置组标识。（参阅 setgid(2)）。 id 可以传入数字 ID 或组名字符串。 如果指定了组名，则此方法在解析关联的数字 ID 时会阻塞。
 
+```js
 if (process.getgid && process.setgid) {
   console.log(`当前的 gid: ${process.getgid()}`);
   try {
@@ -1289,26 +1390,27 @@ if (process.getgid && process.setgid) {
     console.log(`无法设置 gid: ${err}`);
   }
 }
+```
+
 这个函数只在 POSIX 平台有效（在 Windows 或 Android 平台无效）。 此特性在 Worker 线程中不可用。
 
-process.setgroups(groups)#
-暂无中英对照提交修改
+## process.setgroups(groups)
 
-新增于: v0.9.4
-groups <integer[]>
+* groups <integer[]>
+
 The process.setgroups() method sets the supplementary group IDs for the Node.js process. This is a privileged operation that requires the Node.js process to have root or the CAP_SETGID capability.
 
 The groups array can contain numeric group IDs, group names or both.
 
 This function is only available on POSIX platforms (i.e. not Windows or Android). This feature is not available in Worker threads.
 
-process.setuid(id)#
-中英对照提交修改
+## process.setuid(id)
 
-新增于: v0.1.28
-id <integer> | <string>
+* id <integer> | <string>
+
 process.setuid(id) 方法为进程设置用户标识。（参阅 setuid(2)）。 id 可以传入数字 ID 或用户名字符串。 如果指定了用户名，则此方法在解析关联的数字 ID 时会阻塞。
 
+```js
 if (process.getuid && process.setuid) {
   console.log(`当前的 uid: ${process.getuid()}`);
   try {
@@ -1318,13 +1420,14 @@ if (process.getuid && process.setuid) {
     console.log(`无法设置 uid: ${err}`);
   }
 }
+```
+
 这个函数只在 POSIX 平台有效（在 Windows 或 Android 平台无效）。 此特性在 Worker 线程中不可用。
 
-process.setUncaughtExceptionCaptureCallback(fn)#
-暂无中英对照提交修改
+## process.setUncaughtExceptionCaptureCallback(fn)
 
-新增于: v9.3.0
-fn <Function> | <null>
+* fn <Function> | <null>
+
 The process.setUncaughtExceptionCaptureCallback() function sets a function that will be invoked when an uncaught exception occurs, which will receive the exception value itself as its first argument.
 
 If such a function is set, the 'uncaughtException' event will not be emitted. If --abort-on-uncaught-exception was passed from the command line or set through v8.setFlagsFromString(), the process will not abort.
@@ -1333,20 +1436,21 @@ To unset the capture function, process.setUncaughtExceptionCaptureCallback(null)
 
 Using this function is mutually exclusive with using the deprecated domain built-in module.
 
-process.stderr#
-中英对照提交修改
+## process.stderr
 
-<Stream>
+* <Stream>
+
 process.stderr 属性返回连接到 stderr (fd 2) 的流。 它是一个 net.Socket 流（也就是双工流），除非 fd 2 指向一个文件，在这种情况下它是一个可写流。
 
 process.stderr 与其他的 Node.js 流有重大区别。 有关更多信息，参阅有关进程 I/O 的注意事项。
 
-process.stdin#
-中英对照提交修改
+## process.stdin
 
-<Stream>
+* <Stream>
+
 process.stdin 属性返回连接到 stdin (fd 0) 的流。 它是一个 net.Socket 流（也就是双工流），除非 fd 0 指向一个文件，在这种情况下它是一个可读流。
 
+```js
 process.stdin.setEncoding('utf8');
 
 process.stdin.on('readable', () => {
@@ -1360,32 +1464,36 @@ process.stdin.on('readable', () => {
 process.stdin.on('end', () => {
   process.stdout.write('结束');
 });
+```
+
 作为双工流， process.stdin 也可以在“旧”模式下使用，该模式与在 v0.10 之前为 Node.js 编写的脚本兼容。 有关更多信息，参阅流的兼容性。
 
 在“旧”的流模式下，默认情况下 stdin 流是暂停的，因此必须调用 process.stdin.resume() 从中读取。 注意，调用 process.stdin.resume() 本身会将流切换为“旧”模式。
 
-process.stdout#
-中英对照提交修改
+## process.stdout
 
-<Stream>
+* <Stream>
+
 process.stdout 属性返回连接到 stdout (fd 1) 的流。 它是一个 net.Socket 流（也就是双工流），除非 fd 1 指向一个文件，在这种情况下它是一个可写流。
 
 例如，要将 process.stdin 拷贝到 process.stdout：
 
+```js
 process.stdin.pipe(process.stdout);
+```
+
 process.stdout 与其他的 Node.js 流有重大区别。 有关更多信息，参阅有关进程 I/O 的注意事项。
 
-进程 I/O 的注意事项#
-中英对照提交修改
+### 进程 I/O 的注意事项
 
 process.stdout and process.stderr 与 Node.js 中其他 streams 在重要的方面有不同:
 
-console.log() 和 console.error() 内部分别是由它们实现的。
-写操作是否为同步，取决于连接的是什么流以及操作系统是 Windows 还是 POSIX :
+1. console.log() 和 console.error() 内部分别是由它们实现的。
+2. 写操作是否为同步，取决于连接的是什么流以及操作系统是 Windows 还是 POSIX :
+    * 文件：在 Windows 和 POSIX 上是同步的。
+    * TTY（终端）：在 Windows 上是异步的，在 POSIX 上是同步的。
+    * 管道（和 socket）：在 Windows 上是同步的，在 POSIX 上是异步的。
 
-文件：在 Windows 和 POSIX 上是同步的。
-TTY（终端）：在 Windows 上是异步的，在 POSIX 上是同步的。
-管道（和 socket）：在 Windows 上是同步的，在 POSIX 上是异步的。
 这些行为部分是历史原因，改变他们可能导致向后不兼容，而且他们的行为也符合部分用户的预期。
 
 同步写避免了调用 console.log() 或 console.error() 产生不符合预期的交错输出问题，或是在异步写完成前调用了process.exit()导致未写完整。 查看process.exit() 获取更多信息。
@@ -1396,6 +1504,7 @@ TTY（终端）：在 Windows 上是异步的，在 POSIX 上是同步的。
 
 例如:
 
+```shell
 $ node -p "Boolean(process.stdin.isTTY)"
 true
 $ echo "foo" | node -p "Boolean(process.stdin.isTTY)"
@@ -1404,15 +1513,17 @@ $ node -p "Boolean(process.stdout.isTTY)"
 true
 $ node -p "Boolean(process.stdout.isTTY)" | cat
 false
+```
+
 查看 TTY 文档以获得更多信息。
 
-process.throwDeprecation#
-中英对照提交修改
+## process.throwDeprecation
 
-新增于: v0.9.12
-<boolean>
+* <boolean>
+
 process.throwDeprecation 的初始值表明是否在当前的 Node.js 进程上设置了 --throw-deprecation 标志。 process.throwDeprecation 是可变的，因此可以在运行时设置废弃警告是否应该导致错误。 有关更多信息，参见 'warning' 事件和 emitWarning() 方法 的文档。
 
+```shell
 $ node --throw-deprecation -p "process.throwDeprecation"
 true
 $ node -p "process.throwDeprecation"
@@ -1426,63 +1537,69 @@ true
 > process.emitWarning('test', 'DeprecationWarning');
 抛出:
 [DeprecationWarning: test] { name: 'DeprecationWarning' }
-process.title#
-中英对照提交修改
+```
 
-新增于: v0.1.104
-<string>
+## process.title
+
+* <string>
+
 process.title 属性返回当前进程标题（即返回 ps 的当前值）。 为 process.title 分配新值会修改 ps 的当前值。
 
 当分配新值时，不同的平台会对标题施加不同的最大长度限制。 通常这种限制是相当有限的。 例如，在 Linux 和 macOS 上， process.title 仅限于二进制名称的大小加上命令行参数的长度，因为设置 process.title 会覆盖进程的 argv 内存。 Node.js 的 v0.8, 通过覆盖 environ 允许内存较长的过程标题字符串，但是这在一些（相当模糊的）可能是不安全的并且令人困惑情况下。
 
-process.traceDeprecation#
-暂无中英对照提交修改
+## process.traceDeprecation
 
-新增于: v0.8.0
-<boolean>
+* <boolean>
+
 The process.traceDeprecation property indicates whether the --trace-deprecation flag is set on the current Node.js process. See the documentation for the 'warning' event and the emitWarning() method for more information about this flag's behavior.
 
-process.umask([mask])#
-中英对照提交修改
+## process.umask([mask])
 
-新增于: v0.1.19
-mask <number>
+* mask <number>
+
 process.umask()方法用于返回或设置Node.js进程的默认创建文件的权限掩码。子进程从父进程继承这个掩码。 不传参数时，默认返回当前掩码，如果传递了参数，创建文件掩码就被设置为参数值，并且返回之前的掩码。
 
+```js
 const newmask = 0o022;
 const oldmask = process.umask(newmask);
 console.log(
   `将 umask 从 ${oldmask.toString(8)} 更改为 ${newmask.toString(8)}`
 );
+```
+
 Worker 线程能够读取 umask，但是尝试设置 umask 将会导致抛出异常。
 
-process.uptime()#
-中英对照提交修改
+## process.uptime()
 
-新增于: v0.5.0
-返回: <number>
+* 返回: <number>
+
 process.uptime() 方法返回当前 Node.js 进程运行时间秒长
 
 该返回值包含秒的分数。 使用 Math.floor() 来得到整秒钟。
 
-process.version#
-中英对照提交修改
+## process.version
 
-新增于: v0.1.3
-<string>
+* <string>
+
 process.version 属性返回 Node.js 的版本信息。
 
+```js
 console.log(`版本: ${process.version}`);
-process.versions#
-中英对照提交修改
+```
 
-版本历史
-<Object>
+## process.versions
+
+* <Object>
+
 process.versions属性返回一个对象，此对象列出了Node.js和其依赖的版本信息。 process.versions.modules表明了当前ABI版本，此版本会随着一个C++API变化而增加。 Node.js会拒绝加载模块，如果这些模块使用一个不同ABI版本的模块进行编译。
 
+```js
 console.log(process.versions);
+```
+
 会显示类似下面的对象信息:
 
+```js
 { node: '11.13.0',
   v8: '7.0.276.38-node.18',
   uv: '1.27.0',
@@ -1499,20 +1616,21 @@ console.log(process.versions);
   icu: '63.1',
   tz: '2018e',
   unicode: '11.0' }
-退出码#
-中英对照提交修改
+```
+
+## 退出码
 
 正常情况下，如果没有异步操作正在等待，那么 Node.js 会以状态码 0 退出，其他情况下，会用如下的状态码:
 
-1 未捕获异常 - 有一个未被捕获的异常, 并且没被 domain 或 'uncaughtException' 事件处理器处理。
-2 - 未被使用 (Bash 为防内部滥用而保留)
-3 内部的 JavaScript 解析错误 - Node.js 内部的 JavaScript 源代码在引导进程中导致了一个语法解析错误。 这是非常少见的, 一般只会在开发 Node.js 本身的时候出现。
-4 内部的 JavaScript 执行失败 - 引导进程执行 Node.js 内部的 JavaScript 源代码时，返回函数值失败。 这是非常少见的, 一般只会在开发 Node.js 本身的时候出现。
-5 致命错误 - 在 V8 中有一个致命的错误。 比较典型的是以 FATALERROR 为前缀从 stderr 打印出来的消息。
-6 非函数的内部异常处理 - 发生了一个内部异常，但是内部异常处理函数被设置成了一个非函数，或者不能被调用。
-7 内部异常处理运行时失败 - 有一个不能被捕获的异常，在试图处理这个异常时，处理函数本身抛出了一个错误。 这是可能发生的, 比如, 如果一个 'uncaughtException' 或者 domain.on('error') 处理函数抛出了一个错误。
-8 - 未被使用，在之前版本的 Node.js, 退出码 8 有时候表示一个未被捕获的异常。
-9 - 不可用参数 - 也许是某个未知选项没有确定，或者没给必需要的选项填值。
-10 内部的 JavaScript 运行时失败 - 调用引导函数时，引导进程执行 Node.js 内部的 JavaScript 源代码抛出错误。 这是非常少见的, 一般只会在开发 Node.js 本身的时候出现。
-12 不可用的调试参数 - --inspect 和/或 --inspect-brk 选项已设置，但选择的端口号无效或不可用。
->128 退出信号 - 如果 Node.js 的接收信号致命诸如 SIGKILL 或 SIGHUP，那么它的退出代码将是 128 加上信号的码值。 这是 POSIX 的标准做法，因为退出码被定义为 7 位整数，并且信号退出设置高位，然后包含信号码值。 例如，信号 SIGABRT 的值为 6，因此预期的退出代码将为 128 + 6 或 134。
+* 1 未捕获异常 - 有一个未被捕获的异常, 并且没被 domain 或 'uncaughtException' 事件处理器处理。
+* 2 - 未被使用 (Bash 为防内部滥用而保留)
+* 3 内部的 JavaScript 解析错误 - Node.js 内部的 JavaScript 源代码在引导进程中导致了一个语法解析错误。 这是非常少见的, 一般只会在开发 Node.js 本身的时候出现。
+* 4 内部的 JavaScript 执行失败 - 引导进程执行 Node.js 内部的 JavaScript 源代码时，返回函数值失败。 这是非常少见的, 一般只会在开发 Node.js 本身的时候出现。
+* 5 致命错误 - 在 V8 中有一个致命的错误。 比较典型的是以 FATALERROR 为前缀从 stderr 打印出来的消息。
+* 6 非函数的内部异常处理 - 发生了一个内部异常，但是内部异常处理函数被设置成了一个非函数，或者不能被调用。
+* 7 内部异常处理运行时失败 - 有一个不能被捕获的异常，在试图处理这个异常时，处理函数本身抛出了一个错误。 这是可能发生的, 比如, 如果一个 'uncaughtException' 或者 domain.on('error') 处理函数抛出了一个错误。
+* 8 - 未被使用，在之前版本的 Node.js, 退出码 8 有时候表示一个未被捕获的异常。
+* 9 - 不可用参数 - 也许是某个未知选项没有确定，或者没给必需要的选项填值。
+* 10 内部的 JavaScript 运行时失败 - 调用引导函数时，引导进程执行 Node.js 内部的 JavaScript 源代码抛出错误。 这是非常少见的, 一般只会在开发 Node.js 本身的时候出现。
+* 12 不可用的调试参数 - --inspect 和/或 --inspect-brk 选项已设置，但选择的端口号无效或不可用。
+* >128 退出信号 - 如果 Node.js 的接收信号致命诸如 SIGKILL 或 SIGHUP，那么它的退出代码将是 128 加上信号的码值。 这是 POSIX 的标准做法，因为退出码被定义为 7 位整数，并且信号退出设置高位，然后包含信号码值。 例如，信号 SIGABRT 的值为 6，因此预期的退出代码将为 128 + 6 或 134。
