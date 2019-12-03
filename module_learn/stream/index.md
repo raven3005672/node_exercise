@@ -10,34 +10,34 @@ Node.js 提供了多种流对象。 例如，HTTP 服务器的请求和 process.
 
 访问 stream 模块：
 
+```js
 const stream = require('stream');
+```
+
 尽管理解流的工作方式很重要，但是 stream 模块主要用于开发者创建新类型的流实例。 对于以消费流对象为主的开发者，极少需要直接使用 stream 模块。
 
-本文档的组织结构#
-中英对照提交修改
+## 本文档的组织结构
 
 本文档分为两个主要章节，外加其他注意事项作为第三章节。 第一章节阐述了在应用程序中使用流时需要的 API。 第二章节阐述了实现新类型的流时需要的 API。
 
-流的类型#
-中英对照提交修改
+## 流的类型
 
 Node.js 中有四种基本的流类型：
 
-Writable - 可写入数据的流（例如 fs.createWriteStream()）。
-Readable - 可读取数据的流（例如 fs.createReadStream()）。
-Duplex - 可读又可写的流（例如 net.Socket）。
-Transform - 在读写过程中可以修改或转换数据的 Duplex 流（例如 zlib.createDeflate()）。
+* Writable - 可写入数据的流（例如 fs.createWriteStream()）。
+* Readable - 可读取数据的流（例如 fs.createReadStream()）。
+* Duplex - 可读又可写的流（例如 net.Socket）。
+* Transform - 在读写过程中可以修改或转换数据的 Duplex 流（例如 zlib.createDeflate()）。
+
 此外，该模块还包括实用函数 stream.pipeline()、stream.finished() 和 stream.Readable.from()。
 
-对象模式#
-中英对照提交修改
+### 对象模式
 
 Node.js 创建的流都是运作在字符串和 Buffer（或 Uint8Array）上。 当然，流的实现也可以使用其它类型的 JavaScript 值（除了 null）。 这些流会以“对象模式”进行操作。
 
 当创建流时，可以使用 objectMode 选项把流实例切换到对象模式。 将已存在的流切换到对象模式是不安全的。
 
-缓冲#
-中英对照提交修改
+### 缓冲
 
 可写流和可读流都会在内部的缓冲器中存储数据，可以分别使用的 writable.writableBuffer 或 readable.readableBuffer 来获取。
 
@@ -53,11 +53,11 @@ stream API 的主要目标，特别是 stream.pipe()，是为了限制数据的�
 
 因为 Duplex 和 Transform 都是可读又可写的，所以它们各自维护着两个相互独立的内部缓冲器用于读取和写入， 这使得它们在维护数据流时，读取和写入两边可以各自独立地运作。 例如，net.Socket 实例是 Duplex 流，它的可读端可以消费从 socket 接收的数据，而可写端则可以将数据写入到 socket。 因为数据写入到 socket 的速度可能比接收数据的速度快或者慢，所以读写两端应该独立地进行操作（或缓冲）。
 
-用于消费流的 API#
-中英对照提交修改
+## 用于消费流的 API
 
 几乎所有的 Node.js 应用都在某种程度上使用了流。 下面是一个例子，使用流实现了一个 HTTP 服务器：
 
+```js
 const http = require('http');
 
 const server = http.createServer((req, res) => {
@@ -97,6 +97,8 @@ server.listen(1337);
 // string
 // $ curl localhost:1337 -d "not json"
 // 错误: Unexpected token o in JSON at position 1
+```
+
 可写流（比如例子中的 res）会暴露了一些方法，比如 write() 和 end() 用于写入数据到流。
 
 当数据可以从流读取时，可读流会使用 EventEmitter API 来通知应用程序。 从流读取数据的方式有很多种。
@@ -109,49 +111,47 @@ Duplex 流和 Transform 流都是可写又可读的。
 
 对于需要实现新类型的流的开发者，可以参阅用于实现流的API章节。
 
-可写流#
-中英对照提交修改
+### 可写流
 
 可写流是对数据要被写入的目的地的一种抽象。
 
 可写流的例子包括：
 
-客户端的 HTTP 请求
-服务器的 HTTP 响应
-fs 的写入流
-zlib 流
-crypto 流
-TCP socket
-子进程 stdin
-process.stdout、process.stderr
+* 客户端的 HTTP 请求
+* 服务器的 HTTP 响应
+* fs 的写入流
+* zlib 流
+* crypto 流
+* TCP socket
+* 子进程 stdin
+* process.stdout、process.stderr
+
 上面的一些例子事实上是实现了可写流接口的 Duplex 流。
 
 所有可写流都实现了 stream.Writable 类定义的接口。
 
 尽管可写流的具体实例可能略有差别，但所有的可写流都遵循同一基本的使用模式，如以下例子所示：
 
+```js
 const myStream = getWritableStreamSomehow();
 myStream.write('一些数据');
 myStream.write('更多数据');
 myStream.end('完成写入数据');
-stream.Writable 类#
-暂无中英对照提交修改
+```
 
-新增于: v0.9.4
-'close' 事件#
-中英对照提交修改
+#### stream.Writable 类
 
-版本历史
+##### 'close' 事件
+
 当流或其底层资源（比如文件描述符）被关闭时触发。 表明不会再触发其他事件，也不会再发生操作。
 
 如果使用 emitClose 选项创建可写流，则它将会始终发出 'close' 事件。
 
-'drain' 事件#
-中英对照提交修改
+##### 'drain' 事件
 
-新增于: v0.9.4
 如果调用 stream.write(chunk) 返回 false，则当可以继续写入数据到流时会触发 'drain' 事件。
 
+```js
 // 向可写流中写入数据一百万次。
 // 留意背压（back-pressure）。
 function writeOneMillionTimes(writer, data, encoding, callback) {
@@ -177,21 +177,21 @@ function writeOneMillionTimes(writer, data, encoding, callback) {
     }
   }
 }
-'error' 事件#
-中英对照提交修改
+```
 
-新增于: v0.9.4
-<Error>
+##### 'error' 事件
+
+* <Error>
+
 如果在写入或管道数据时发生错误，则会触发 'error' 事件。 当调用时，监听器回调会传入一个 Error 参数。
 
 除非在创建流时将 autoDestroy 选项设置为 true，否则在触发 'error' 事件时不会关闭流。
 
-'finish' 事件#
-中英对照提交修改
+##### 'finish' 事件
 
-新增于: v0.9.4
 调用 stream.end() 且缓冲数据都已传给底层系统之后触发。
 
+```js
 const writer = getWritableStreamSomehow();
 for (let i = 0; i < 100; i++) {
   writer.write(`写入 #${i}!\n`);
@@ -200,13 +200,15 @@ writer.end('写入结尾\n');
 writer.on('finish', () => {
   console.error('写入已完成');
 });
-'pipe' 事件#
-中英对照提交修改
+```
 
-新增于: v0.9.4
-src <stream.Readable> 通过管道流入到可写流的来源流。
+##### 'pipe' 事件
+
+* src <stream.Readable> 通过管道流入到可写流的来源流。
+
 当在可读流上调用 stream.pipe() 方法时会发出 'pipe' 事件，并将此可写流添加到其目标集。
 
+```js
 const writer = getWritableStreamSomehow();
 const reader = getReadableStreamSomehow();
 writer.on('pipe', (src) => {
@@ -214,6 +216,8 @@ writer.on('pipe', (src) => {
   assert.equal(src, reader);
 });
 reader.pipe(writer);
+```
+
 'unpipe' 事件#
 中英对照提交修改
 
