@@ -2,7 +2,7 @@
  * @Author: yanglinylin.yang 
  * @Date: 2019-12-02 20:05:17 
  * @Last Modified by: yanglinylin.yang
- * @Last Modified time: 2019-12-03 20:30:27
+ * @Last Modified time: 2019-12-04 20:00:47
  */
 
 // http服务器
@@ -39,61 +39,4 @@ server.listen(1337);
 // string
 // $ curl localhost:1337 -d "not json"
 // 错误: Unexpected token o in JSON at position 1
-
-
-// 可写流的drain事件
-// 向可写流中写入数据一百万次，留意背压（back-pressure）
-function writeOneMillionTimes(writer, data, encoding, callback) {
-    let i = 1000000;
-    write();
-    function write() {
-        let ok = true;
-        do {
-            i--;
-            if (i === 0) {
-                // 最后一次写入
-                writer.write(data, encoding, callback);
-            } else {
-                // 检查是否可以继续写入
-                // 不要传入回调，因为写入还没有结束
-                ok = writer.write(data, encoding);
-            }
-        } while (i > 0 && ok);
-        if (i > 0) {
-            // 被提前中止
-            // 当触发'drain'事件时继续写入
-            writer.once('drain', write);
-        }
-    }
-}
-
-
-// finish事件
-// 调用stream.end()且缓冲数据都已传给底层系统之后触发
-const writer = getWritableStreamSomehow();
-for (let i = 0; i < 100; i++) {
-    writer.write(`写入 #${i}!\n`);
-}
-writer.end('写入结尾\n');
-writer.on('finish', () => {
-    console.error('写入已完成');
-});
-
-
-// pipe事件
-// 当在可读流上调用stream.pipe()方法时会发出pipe事件，并将此可写流添加到其目标集。
-const writer = getWritableStreamSomehow();
-const reader = getReadableStreamSomehow();
-writer.on('pipe', (src) => {
-    console.log('有数据正通过管道流入写入器');
-    assert.equal(src, reader);
-});
-reader.pipe(writer);
-
-
-
-
-
-
-
 
