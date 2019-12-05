@@ -1343,21 +1343,19 @@ size 是可选的参数。 对于读取是一个单一操作的实现，可以�
 
 readable._read() 方法有下划线前缀，因为它是在定义在类的内部，不应该被用户程序直接调用。
 
-readable._destroy(err, callback)#
-中英对照提交修改
+#### readable._destroy(err, callback)
 
-新增于: v8.0.0
-err <Error> 可能发生的错误。
-callback <Function> 回调函数。
+* err <Error> 可能发生的错误。
+* callback <Function> 回调函数。
+
 _destroy() 方法会被 readable.destroy() 调用。 它可以被子类重写，但不能直接调用。
 
-readable.push(chunk[, encoding])#
-中英对照提交修改
+#### readable.push(chunk[, encoding])
 
-版本历史
-chunk <Buffer> | <Uint8Array> | <string> | <null> | <any> 要推入读取队列的数据块。  对于非对象模式的流， chunk 必须是字符串、 Buffer 或 Uint8Array。  对于对象模式的流， chunk 可以是任何 JavaScript 值。
-encoding <string> 字符串数据块的字符编码。 必须是有效的 Buffer 字符编码，例如 'utf8' 或 'ascii'。
-返回: <boolean> 如果还有数据块可以继续推入，则返回 true，否则返回 false。
+* chunk <Buffer> | <Uint8Array> | <string> | <null> | <any> 要推入读取队列的数据块。  对于非对象模式的流， chunk 必须是字符串、 Buffer 或 Uint8Array。  对于对象模式的流， chunk 可以是任何 JavaScript 值。
+* encoding <string> 字符串数据块的字符编码。 必须是有效的 Buffer 字符编码，例如 'utf8' 或 'ascii'。
+* 返回: <boolean> 如果还有数据块可以继续推入，则返回 true，否则返回 false。
+
 当 chunk 是 Buffer、 Uint8Array 或 string 时， chunk 的数据会被添加到内部队列中供流消费。 在没有数据可写入后，给 chunk 传入 null 表示流的结束（EOF）。
 
 当可读流处在暂停模式时，使用 readable.push() 添加的数据可以在触发 'readable' 事件时通过调用 readable.read() 读取。
@@ -1366,6 +1364,7 @@ encoding <string> 字符串数据块的字符编码。 必须是有效的 Buffer
 
 readable.push() 方法被设计得尽可能的灵活。 例如，当需要封装一个带有'暂停/继续'机制与数据回调的底层数据源时，该底层数据源可以使用自定义的可读流实例封装：
 
+```js
 // `source` 是一个有 `readStop()` 和 `readStart()` 方法的对象，
 // 当有数据时会调用 `ondata` 方法，
 // 当数据结束时会调用 `onend` 方法。
@@ -1393,15 +1392,17 @@ class SourceWrapper extends Readable {
     this._source.readStart();
   }
 }
+```
+
 readable.push() 方法用于将内容推入内部的 buffer。 它可以由 readable._read() 方法驱动。
 
 对于非对象模式的流，如果 readable.push() 的 chunk 参数为 undefined，则它会被当成空字符串或 buffer。 详见 readable.push('')。
 
-读取时的异常处理#
-中英对照提交修改
+#### 读取时的异常处理
 
 在 readable._read() 执行期间发生的错误必须通过 readable.destroy(err) 方法冒泡。 从 readable._read() 中抛出 Error 或手动触发 'error' 事件会导致未定义的行为。
 
+```js
 const { Readable } = require('stream');
 
 const myReadable = new Readable({
@@ -1414,11 +1415,13 @@ const myReadable = new Readable({
     }
   }
 });
-可读流的例子#
-中英对照提交修改
+```
+
+#### 可读流的例子
 
 下面是一个可读流的简单例子，依次触发读取 1 到 1,000,000：
 
+```js
 const { Readable } = require('stream');
 
 class Counter extends Readable {
@@ -1439,8 +1442,9 @@ class Counter extends Readable {
     }
   }
 }
-实现双工流#
-中英对照提交修改
+```
+
+### 实现双工流
 
 双工流同时实现了可读流和可写流，例如 TCP socket 连接。
 
@@ -1450,22 +1454,16 @@ stream.Duplex 类的原型继承自 stream.Readable 和寄生自 stream.Writable
 
 自定义的双工流必须调用 new stream.Duplex([options]) 构造函数并实现 readable._read() 和 writable._write() 方法。
 
-new stream.Duplex(options)#
-中英对照提交修改
+#### new stream.Duplex(options)
 
-版本历史
-options <Object> 同时传给 Writable 和 Readable 的构造函数。
+* options <Object> 同时传给 Writable 和 Readable 的构造函数。
+  * allowHalfOpen <boolean> 如果设为 false，则当可读端结束时，可写端也会自动结束。 默认为 true。
+  * readableObjectMode <boolean> 设置流的可读端为 objectMode。 如果 objectMode 为 true，则不起作用。 默认为 false。
+  * writableObjectMode <boolean> 设置流的可写端为 objectMode。 如果 objectMode 为 true，则不起作用。 默认为 false。
+  * readableHighWaterMark <number> 设置流的可读端的 highWaterMark。 如果已经设置了 highWaterMark，则不起作用。
+  * writableHighWaterMark <number> 设置流的可写端的 highWaterMark。 如果已经设置了 highWaterMark，则不起作用。
 
-allowHalfOpen <boolean> 如果设为 false，则当可读端结束时，可写端也会自动结束。 默认为 true。
-
-readableObjectMode <boolean> 设置流的可读端为 objectMode。 如果 objectMode 为 true，则不起作用。 默认为 false。
-
-writableObjectMode <boolean> 设置流的可写端为 objectMode。 如果 objectMode 为 true，则不起作用。 默认为 false。
-
-readableHighWaterMark <number> 设置流的可读端的 highWaterMark。 如果已经设置了 highWaterMark，则不起作用。
-
-writableHighWaterMark <number> 设置流的可写端的 highWaterMark。 如果已经设置了 highWaterMark，则不起作用。
-
+```js
 const { Duplex } = require('stream');
 
 class MyDuplex extends Duplex {
@@ -1474,8 +1472,11 @@ class MyDuplex extends Duplex {
     // ...
   }
 }
+```
+
 使用 ES6 之前的语法：
 
+```js
 const { Duplex } = require('stream');
 const util = require('util');
 
@@ -1485,8 +1486,11 @@ function MyDuplex(options) {
   Duplex.call(this, options);
 }
 util.inherits(MyDuplex, Duplex);
+```
+
 使用简化的构造函数：
 
+```js
 const { Duplex } = require('stream');
 
 const myDuplex = new Duplex({
@@ -1497,11 +1501,13 @@ const myDuplex = new Duplex({
     // ...
   }
 });
-双工流的例子#
-中英对照提交修改
+```
+
+#### 双工流的例子
 
 下面举例说明了一个双工流的简单示例，它封装了一个可以写入数据的假设的底层源对象，并且可以从中读取数据，尽管使用的是与 Node.js 流不兼容的 API。 下面举例了一个双工流的简单示例，它通过可读流接口读回可写流接口的 buffer 传入的写入数据。
 
+```js
 const { Duplex } = require('stream');
 const kSource = Symbol('source');
 
@@ -1525,15 +1531,17 @@ class MyDuplex extends Duplex {
     });
   }
 }
+```
+
 双工流最重要的方面是，可读端和可写端相互独立于彼此地共存在同一个对象实例中。
 
-对象模式的双工流#
-中英对照提交修改
+#### 对象模式的双工流
 
 对双工流来说，可以使用 readableObjectMode 和 writableObjectMode 选项来分别设置可读端和可写端的 objectMode。
 
 在下面的例子中，创建了一个变换流（双工流的一种），对象模式的可写端接收 JavaScript 数值，并在可读端转换为十六进制字符串。
 
+```js
 const { Transform } = require('stream');
 
 // 转换流也是双工流。
@@ -1561,8 +1569,9 @@ myTransform.write(10);
 // 打印: 0a
 myTransform.write(100);
 // 打印: 64
-实现转换流#
-中英对照提交修改
+```
+
+### 实现转换流
 
 转换流是一种双工流，它会对输入做些计算然后输出。 例如 zlib 流和 crypto 流会压缩、加密或解密数据。
 
@@ -1574,13 +1583,13 @@ stream.Transform 类继承自 stream.Duplex，并且实现了自有的 writable.
 
 当使用转换流时，如果可读端的输出没有被消费，则写入流的数据可能会导致可写端被暂停。
 
-new stream.Transform([options])#
-中英对照提交修改
+#### new stream.Transform([options])
 
-options <Object> 同时传给 Writable 和 Readable 的构造函数。
+* options <Object> 同时传给 Writable 和 Readable 的构造函数。
+  * transform <Function> 对 stream._transform() 的实现。
+  * flush <Function> 对 stream._flush() 的实现。
 
-transform <Function> 对 stream._transform() 的实现。
-flush <Function> 对 stream._flush() 的实现。
+```js
 const { Transform } = require('stream');
 
 class MyTransform extends Transform {
@@ -1589,8 +1598,11 @@ class MyTransform extends Transform {
     // ...
   }
 }
+```
+
 使用 ES6 之前的语法：
 
+```js
 const { Transform } = require('stream');
 const util = require('util');
 
@@ -1600,8 +1612,11 @@ function MyTransform(options) {
   Transform.call(this, options);
 }
 util.inherits(MyTransform, Transform);
+```
+
 使用简化的构造函数：
 
+```js
 const { Transform } = require('stream');
 
 const myTransform = new Transform({
@@ -1609,15 +1624,16 @@ const myTransform = new Transform({
     // ...
   }
 });
-'finish' 与 'end' 事件#
-中英对照提交修改
+```
+
+#### 'finish' 与 'end' 事件
 
 'finish' 事件来自 stream.Writable 类，'end' 事件来自 stream.Readable 类。 当调用了 stream.end() 并且 stream._transform() 处理完全部数据块之后，触发 'finish' 事件。 当调用了 transform._flush() 中的回调函数并且所有数据已经输出之后，触发 'end' 事件。
 
-transform._flush(callback)#
-中英对照提交修改
+#### transform._flush(callback)
 
-callback <Function> 当剩余的数据被 flush 后的回调函数。
+* callback <Function> 当剩余的数据被 flush 后的回调函数。
+
 该函数不能被应用程序代码直接调用。 它应该由子类实现，且只能被内部的 Readable 类的方法调用。
 
 某些情况下，转换操作可能需要在流的末尾发送一些额外的数据。 例如， zlib 压缩流时会储存一些用于优化输出的内部状态。 当流结束时，这些额外的数据需要被 flush 才算完成压缩。
@@ -1628,12 +1644,12 @@ callback <Function> 当剩余的数据被 flush 后的回调函数。
 
 transform._flush() 方法有下划线前缀，因为它是在定义在类的内部，不应该被用户程序直接调用。
 
-transform._transform(chunk, encoding, callback)#
-中英对照提交修改
+#### transform._transform(chunk, encoding, callback)
 
-chunk <Buffer> | <string> | <any> 要转换的 Buffer，从传给 stream.write() 的 string 转换而来。 如果流的 decodeStrings 选项为 false 或者流在对象模式下运行，则数据块将不会被转换，并且将是传给 stream.write() 的任何内容。
-encoding <string> 如果数据块是一个字符串，则这是编码类型。 如果数据块是一个 buffer，则为特殊值 'buffer'。在这种情况下忽略它。
-callback <Function> 当 chunk 处理完成时的回调函数。
+* chunk <Buffer> | <string> | <any> 要转换的 Buffer，从传给 stream.write() 的 string 转换而来。 如果流的 decodeStrings 选项为 false 或者流在对象模式下运行，则数据块将不会被转换，并且将是传给 stream.write() 的任何内容。
+* encoding <string> 如果数据块是一个字符串，则这是编码类型。 如果数据块是一个 buffer，则为特殊值 'buffer'。在这种情况下忽略它。
+* callback <Function> 当 chunk 处理完成时的回调函数。
+
 该函数不能被应用程序代码直接调用。 它应该由子类实现，且只能被内部的 Readable 类的方法调用。
 
 所有转换流的实现都必须提供 _transform() 方法来接收输入并生产输出。 transform._transform() 的实现会处理写入的字节，进行一些计算操作，然后使用 readable.push() 输出到可读流。
@@ -1644,6 +1660,7 @@ transform.push() 可能会被调用零次或多次用来从每次输入的数据
 
 当前数据被完全消费之后，必须调用 callback 函数。 当处理输入的过程中发生出错时， callback 的第一个参数传入 Error 对象，否则传入 null。 如果 callback 传入了第二个参数，则它会被转发到 readable.push()。 就像下面的例子：
 
+```js
 transform.prototype._transform = function(data, encoding, callback) {
   this.push(data);
   callback();
@@ -1652,38 +1669,41 @@ transform.prototype._transform = function(data, encoding, callback) {
 transform.prototype._transform = function(data, encoding, callback) {
   callback(null, data);
 };
+```
+
 transform._transform() 方法有下划线前缀，因为它是在定义在类的内部，不应该被用户程序直接调用。
 
 transform._transform() 不能并行调用。 流使用了队列机制，无论同步或异步的情况下，都必须先调用 callback 之后才能接收下一个数据块。
 
-stream.PassThrough 类#
-中英对照提交修改
+#### stream.PassThrough 类
 
 stream.PassThrough 类是一个无关紧要的转换流，只是单纯地把输入的字节原封不动地输出。 它主要用于示例或测试，但有时也会用于某些新颖的流的基本组成部分。
 
-其他注意事项#
-流与异步生成器和异步迭代器的兼容性#
-中英对照提交修改
+## 其他注意事项
+
+### 流与异步生成器和异步迭代器的兼容性
 
 借助 JavaScript 中异步生成器和迭代器的支持，异步生成器实际上是此时的一流语言级流构造。
 
 下面提供了使用带有异步生成器和异步迭代器的 Node.js 流的一些常见互操作情况。
 
-使用异步迭代器消费可读流#
-中英对照提交修改
+#### 使用异步迭代器消费可读流
 
+```js
 (async function() {
   for await (const chunk of readable) {
     console.log(chunk);
   }
 })();
+```
+
 异步迭代器在流上注册一个永久的错误处理程序，以防止任何未处理的 post-destroy 错误。
 
-使用异步生成器创建可读流#
-中英对照提交修改
+#### 使用异步生成器创建可读流
 
 我们可以使用 Readable.from() 实用方法从异步生成器构造 Node.js 可读流：
 
+```js
 const { Readable } = require('stream');
 
 async function * generate() {
@@ -1697,11 +1717,13 @@ const readable = Readable.from(generate());
 readable.on('data', (chunk) => {
   console.log(chunk);
 });
-从异步迭代器传送到可写流#
-中英对照提交修改
+```
+
+#### 从异步迭代器传送到可写流
 
 在从异步迭代器写入可写流的场景中，应确保正确地处理背压和错误。
 
+```js
 const { once } = require('events');
 const finished = util.promisify(stream.finished);
 
@@ -1717,10 +1739,13 @@ const writable = fs.createWriteStream('./file');
   // 确保完成没有错误。
   await finished(writable);
 })();
+```
+
 在上面的示例中， once() 监听器会为 'drain' 事件捕获并抛出 write() 上的错误，因为 once() 也会处理 'error' 事件。 为了确保写入流的完成且没有错误，使用上面的 finished() 方法比使用 'finish' 事件的 once() 监听器更为安全。 在某些情况下， 'finish' 之后可写流可能会触发 'error' 事件，并且 once() 将会在处理 'finish' 事件时释放 'error' 处理程序，这可能导致未处理的错误。
 
 另外，可读流可以用 Readable.from() 封装，然后通过 .pipe() 传送：
 
+```js
 const finished = util.promisify(stream.finished);
 
 const writable = fs.createWriteStream('./file');
@@ -1731,8 +1756,11 @@ const writable = fs.createWriteStream('./file');
   // 确保完成没有错误。
   await finished(writable);
 })();
+```
+
 或者，使用 stream.pipeline() 传送流：
 
+```js
 const pipeline = util.promisify(stream.pipeline);
 
 const writable = fs.createWriteStream('./file');
@@ -1741,22 +1769,25 @@ const writable = fs.createWriteStream('./file');
   const readable = Readable.from(iterator);
   await pipeline(readable, writable);
 })();
-兼容旧版本的 Node.js#
-暂无中英对照
+```
+
+### 兼容旧版本的 Node.js
 
 Prior to Node.js 0.10, the Readable stream interface was simpler, but also less powerful and less useful.
+* Rather than waiting for calls to the stream.read() method, 'data' events would begin emitting immediately. Applications that would need to perform some amount of work to decide how to handle data were required to store read data into buffers so the data would not be lost.
+* The stream.pause() method was advisory, rather than guaranteed. This meant that it was still necessary to be prepared to receive 'data' events even when the stream was in a paused state.
 
-Rather than waiting for calls to the stream.read() method, 'data' events would begin emitting immediately. Applications that would need to perform some amount of work to decide how to handle data were required to store read data into buffers so the data would not be lost.
-The stream.pause() method was advisory, rather than guaranteed. This meant that it was still necessary to be prepared to receive 'data' events even when the stream was in a paused state.
 In Node.js 0.10, the Readable class was added. For backward compatibility with older Node.js programs, Readable streams switch into "flowing mode" when a 'data' event handler is added, or when the stream.resume() method is called. The effect is that, even when not using the new stream.read() method and 'readable' event, it is no longer necessary to worry about losing 'data' chunks.
 
 While most applications will continue to function normally, this introduces an edge case in the following conditions:
 
-No 'data' event listener is added.
-The stream.resume() method is never called.
-The stream is not piped to any writable destination.
+* No 'data' event listener is added.
+* The stream.resume() method is never called.
+* The stream is not piped to any writable destination.
+
 For example, consider the following code:
 
+```js
 // WARNING!  BROKEN!
 net.createServer((socket) => {
 
@@ -1767,10 +1798,13 @@ net.createServer((socket) => {
   });
 
 }).listen(1337);
+```
+
 Prior to Node.js 0.10, the incoming message data would be simply discarded. However, in Node.js 0.10 and beyond, the socket remains paused forever.
 
 The workaround in this situation is to call the stream.resume() method to begin the flow of data:
 
+```js
 // Workaround.
 net.createServer((socket) => {
   socket.on('end', () => {
@@ -1780,10 +1814,11 @@ net.createServer((socket) => {
   // Start the flow of data, discarding it.
   socket.resume();
 }).listen(1337);
+```
+
 In addition to new Readable streams switching into flowing mode, pre-0.10 style streams can be wrapped in a Readable class using the readable.wrap() method.
 
-readable.read(0)#
-中英对照提交修改
+### readable.read(0)
 
 在某些情况下，需要触发底层可读流的刷新，但实际并不消费任何数据。 在这种情况下，可以调用 readable.read(0)，返回 null。
 
@@ -1791,15 +1826,13 @@ readable.read(0)#
 
 虽然大多数应用程序几乎不需要这样做，但 Node.js 中会出现这种情况，尤其是在可读流类的内部。
 
-readable.push('')#
-中英对照提交修改
+### readable.push('')
 
 不推荐使用 readable.push('')。
 
 向一个非对象模式的流推入一个零字节的字符串、 Buffer 或 Uint8Array 会产生副作用。 因为调用了 readable.push()，该调用会结束读取进程。 然而，因为参数是一个空字符串，没有数据被添加到可读缓冲, 所以也就没有数据可供用户消费。
 
-调用 `readable.setEncoding()` 之后 `highWaterMark` 的差异#
-中英对照提交修改
+### 调用 `readable.setEncoding()` 之后 `highWaterMark` 的差异
 
 使用 readable.setEncoding() 会改变 highWaterMark 属性在非对象模式中的作用。
 
