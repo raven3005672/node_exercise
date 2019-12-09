@@ -2,7 +2,7 @@
  * @Author: yanglinylin.yang 
  * @Date: 2019-12-02 20:05:17 
  * @Last Modified by: yanglinylin.yang
- * @Last Modified time: 2019-12-05 17:33:29
+ * @Last Modified time: 2019-12-06 14:20:51
  */
 
 // http服务器
@@ -110,7 +110,3 @@ myTransform.on('data', (chunk) => console.log(chunk));
 myTransform.write(1);       // 打印：01
 myTransform.write(10);      // 打印：0a
 myTransform.write(100);     // 打印：64
-
-
-
-
